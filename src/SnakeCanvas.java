@@ -29,8 +29,8 @@ implements Runnable, KeyListener{
 
 	private final int GRID_SIZE = 50;
 	private final int BOX_SIZE = 10;
-	private final int STARTING_LENGTH = 20;
-	private final int STARTING_SPEED = 100;
+	private final int STARTING_LENGTH = 5;
+	private final int STARTING_SPEED = 130;
 	
 	private int level = 0;
 	private int score = 0;
@@ -39,6 +39,7 @@ implements Runnable, KeyListener{
 	private int[][] grid;
 	private ArrayList<Location> snakeLoc;
 	private ArrayList<Integer> snakeDir;
+	private ArrayList<Animation> animations;
 	private HashMap<Location, Integer> turnPoints;
 	private int currentDirection = Direction.UP;
 	private Location dot;
@@ -54,6 +55,7 @@ implements Runnable, KeyListener{
 		snakeLoc = new ArrayList<Location>();
 		snakeDir = new ArrayList<Integer>();
 		turnPoints = new HashMap<Location, Integer>();
+		animations = new ArrayList<Animation>();
 		this.setPreferredSize(new Dimension(640, 600));
 		
 		snakeBody = ImageLoader.getImage("images/body.png");
@@ -93,8 +95,12 @@ implements Runnable, KeyListener{
 		//First, let us check to see if the score means it is time to level up
 		if (score % 6 == 0 && score > 5)
 		{
-			if (speed > 10)
+			if (speed > 50)
+			{
 				speed -= 10;
+				animations.add(new Circle(new Location(snakeLoc.get(0).getX() * BOX_SIZE, snakeLoc.get(0).getY() * BOX_SIZE), Color.GREEN, 10));
+			}
+				
 			
 			level++;
 			score+=2;
@@ -105,6 +111,11 @@ implements Runnable, KeyListener{
 		//Let's detect if a snake is on a dot
 		LoseCheck();
 		DotCheck();
+		AnimCheck();
+		
+		//animation
+		for (Animation a : animations)
+			a.turn();
 		
 		
 		
@@ -180,10 +191,15 @@ implements Runnable, KeyListener{
 		
 		g2.drawImage(dotImage, dot.getX() * BOX_SIZE, dot.getY() * BOX_SIZE, 10, 10, null);
 		
+		
 		g.drawString("Score: " + score, 10, GRID_SIZE * BOX_SIZE + 15);
 		g.drawString("Speed: " + (150 - speed), 10, GRID_SIZE * BOX_SIZE + 30);
 		g.drawString("Size: " + currentLength, 10, GRID_SIZE * BOX_SIZE + 45);
 		g.drawString("SNAKE - Created in under two hours by Brandon Milton, http://brandonsoft.com", 10, GRID_SIZE * BOX_SIZE + 60);
+		
+		for (Animation a : animations)
+			a.draw(g2);
+		
 		if (lost)
 		{
 			Font oldFont = g.getFont();
@@ -217,13 +233,13 @@ implements Runnable, KeyListener{
 	public void DrawGrid(Graphics2D g)
 	{
 		//First, let's draw the horizontal lines
-		for (int x = 0; x <= GRID_SIZE; x+= 1)
-		{
-			g.drawLine(x * BOX_SIZE, 0, x * BOX_SIZE, GRID_SIZE * BOX_SIZE); //vertical
-			g.drawLine(0, x * BOX_SIZE, GRID_SIZE * BOX_SIZE, x * BOX_SIZE); //horizontal
-		}
+		//for (int x = 0; x <= GRID_SIZE; x+= 1)
+		//{
+			//g.drawLine(x * BOX_SIZE, 0, x * BOX_SIZE, GRID_SIZE * BOX_SIZE); //vertical
+			//g.drawLine(0, x * BOX_SIZE, GRID_SIZE * BOX_SIZE, x * BOX_SIZE); //horizontal
+		//}
 		
-		//g.fillRect(0, 0, GRID_SIZE * BOX_SIZE, GRID_SIZE * BOX_SIZE);
+		g.fillRect(0, 0, GRID_SIZE * BOX_SIZE, GRID_SIZE * BOX_SIZE);
 
 	}
 
@@ -294,11 +310,37 @@ implements Runnable, KeyListener{
 			score+= 2;
 			AddSnakeLength();
 			
+			animations.add(new Circle(new Location(dot.getX() * BOX_SIZE, dot.getY() * BOX_SIZE), Color.RED));
+			
 			//generate new dot
 			GenerateDot();
 			
 		}
 	}
+	
+	public void AnimCheck()
+	{
+		 ArrayList<Animation> toDelete = new ArrayList<Animation>();
+		
+		for (Animation a : animations)
+		{
+			if (a instanceof Circle)
+			{
+				Circle c = (Circle)a;
+				if ((c.getLoc().getX() - (c.getWidth() / 2) + c.getWidth() > GRID_SIZE * BOX_SIZE) && (c.getLoc().getY() - (c.getWidth() / 2) + c.getWidth() > GRID_SIZE * BOX_SIZE)
+						&& (c.getLoc().getX() + (c.getWidth() / 2) - c.getWidth() < 0) && (c.getLoc().getY() + (c.getWidth() / 2) - c.getWidth() < 0))
+				{
+					toDelete.add(a);
+				}	
+			}
+		}
+		
+		for (Animation tDel : toDelete)
+			animations.remove(tDel);
+		
+		toDelete.clear();
+	}
+	
 	
 	public void LoseCheck()
 	{
